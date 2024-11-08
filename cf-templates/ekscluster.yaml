@@ -54,6 +54,56 @@ Resources:
                 Action: 
                   - ec2:DescribeInstances
                 Resource: "*"
+              - Effect: Allow
+                Action: 
+                  - sts:TagSession
+                Resource: "*"
+              - Effect: Allow
+                Action: 
+                  - es:DescribeDomain
+                Resource: "*"
+              - Effect: Allow
+                Action: 
+                  - es:ESHttp*
+                Resource: "*"
+              - Effect: Allow
+                Action: 
+                  - osis:*
+                Resource: "*"
+
+  OSIPipelineRole:
+    Type: "AWS::IAM::Role"
+    DependsOn: EKSPodOTELPodRole
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - pods.eks.amazonaws.com
+              AWS: 
+                - !GetAtt EKSPodOTELPodRole.Arn
+            Action:
+              - sts:AssumeRole
+              - sts:TagSession  
+      Policies:
+        - PolicyName: osis
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - es:DescribeDomain
+                Resource: "*"
+              - Effect: Allow
+                Action: 
+                  - es:ESHttp*
+                Resource: "*"
+              - Effect: Allow
+                Action: 
+                  - osis:*
+                Resource: "*"
 
   EKSNodesIAMRole:
     Type: "AWS::IAM::Role"

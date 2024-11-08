@@ -26,28 +26,7 @@ Parameters:
     Type: String
   LatestAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
-
-Mappings:
-  AWSInstanceType2Arch:
-    t1.micro:
-      Arch: HVM64
-    t2.small:
-      Arch: HVM64
-    t2.medium:
-      Arch: HVM64
-    t2.large:
-      Arch: HVM64
-    m1.small:
-      Arch: HVM64
-    m1.medium:
-      Arch: HVM64
-    c1.medium:
-      Arch: HVM64
-    c3.large:
-      Arch: HVM64
-    c3.xlarge:
-      Arch: HVM64
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
 
 Resources:
   OpenSearchIngressSecurityGroup:
@@ -310,6 +289,8 @@ Resources:
         InstanceType: !Ref ReverseProxyInstanceType
         IamInstanceProfile: 
           Name: !Ref InstanceProfile
+        MetadataOptions: 
+          HttpTokens: "required"
         SecurityGroupIds:
           - !Ref ReverseProxyInstanceSecurityGroup
         TagSpecifications:
@@ -322,7 +303,7 @@ Resources:
             #!/bin/bash
             yum update -y
             yum install jq -y
-            amazon-linux-extras install nginx1 -y
+            yum install nginx -y
             openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/cert.key -out /etc/nginx/cert.crt -subj /C=US/ST=./L=./O=./CN=.
 
             host='${NetworkLoadBalancer.DNSName}'
@@ -343,10 +324,10 @@ Resources:
 
               location ^~ /_dashboards {
                   proxy_pass https://${OpenSearchServiceDomain.DomainEndpoint}/_dashboards;
-                  proxy_cookie_domain ${OpenSearchServiceDomain.DomainEndpoint} $host;
+                  proxy_cookie_domain ${OpenSearchServiceDomain.DomainEndpoint} \$host;
                   proxy_set_header Accept-Encoding "";
                   sub_filter_types *;
-                  sub_filter ${OpenSearchServiceDomain.DomainEndpoint} $host;
+                  sub_filter ${OpenSearchServiceDomain.DomainEndpoint} \$host;
                   sub_filter_once off;
                   proxy_buffer_size 128k;
                   proxy_buffers 4 256k;
