@@ -59,7 +59,7 @@ Parameters:
   EngineVersion:
     Description: Amazon OpenSearch Service - Version
     Type: String
-    Default: "OpenSearch_2.15"
+    Default: "OpenSearch_2.11"
 
   InstanceType:
     Description: Amazon OpenSearch Service - Instance Type
@@ -217,7 +217,7 @@ Outputs:
   StackRef1:
     Value: !Ref OpenSearch
   AOSDashboardsPublic0:
-    Value: !GetAtt OpenSearch.Outputs.AOSDashboardsPublicIP
+    Value: !Sub "https://${OpenSearch.Outputs.AOSDashboardsPublicIP}/_dashboards"
   AOSDomainEndpoint0:
     Value: !GetAtt OpenSearch.Outputs.AOSDomainEndpoint
   AOSDomainUserName0:

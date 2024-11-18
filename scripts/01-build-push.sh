@@ -38,6 +38,37 @@ push_images_s3() {
     cd ../..
 }
 
+check_build_status() {
+    # Get all project names
+    projects=$(aws codebuild list-projects --output text --query 'projects[*]')
+    myArray=()
+    for project in $projects; do
+        myArray+=($project)
+    done
+    # Loop through each project
+    status="NA"
+    while [ ${#myArray[@]} -gt 0 ]; 
+    do
+        message="Building: "
+        newProjects=()
+        for project in ${myArray[@]}; do
+            # Get the most recent builds for this project
+            builds=$(aws codebuild list-builds-for-project --project-name "$project" --output text --query 'ids[*]')
+            
+            # Get detailed build information
+            status=$(aws codebuild batch-get-builds --ids $builds --query 'builds[*].[buildStatus]' --output text)
+            if [[ "$status" != SUCCEEDED* ]] then
+                message+="$project "
+                newProjects+=("$project") 
+            fi  
+        done
+        myArray=("${newProjects[@]}")
+        echo -ne "\n$message"
+        sleep 10
+    done
+    echo "Build complete"
+}
+
 push_images_s3 '04-analytics-service' 'analytics-service'
 push_images_s3 '05-databaseService' 'database-service'
 push_images_s3 '06-orderService' 'order-service'
@@ -46,3 +77,5 @@ push_images_s3 '08-paymentService' 'payment-service'
 push_images_s3 '09-recommendationService' 'recommendation-service'
 push_images_s3 '10-authenticationService' 'authentication-service'
 push_images_s3 '11-client' 'client-service'
+
+check_build_status
