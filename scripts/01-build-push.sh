@@ -34,7 +34,7 @@ push_images_s3() {
     sed -i -e "s/__AWS_REGION__/${AWS_REGION}/g" kubernetes/01-deployment.yaml
     rm -rf kubernetes/01-deployment.yaml-e
     sleep 10
-    aws codebuild start-build --project-name $repo_name --no-paginate
+    build=$(aws codebuild start-build --project-name $repo_name)
     cd ../..
 }
 
