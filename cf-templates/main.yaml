@@ -104,7 +104,7 @@ Parameters:
   S3BucketName:
     Description: "Please enter the bucket name for the dependencies CloudFormation templates"
     Type: String
-    Default: "assets.trollingers.com.s3.us-east-1.amazonaws.com"
+    Default: "ws-assets-prod-iad-r-iad-ed304a55c2ca1aee.s3.us-east-1.amazonaws.com"
 
 Metadata:
   AWS::CloudFormation::Interface:
