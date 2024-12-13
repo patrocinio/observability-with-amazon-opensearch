@@ -144,6 +144,8 @@ Resources:
       Name: !Ref EKSClusterName
       Version: "1.31"
       RoleArn: !Ref EKSIAMRole
+      AccessConfig:
+        AuthenticationMode: API_AND_CONFIG_MAP
       ResourcesVpcConfig:
         SubnetIds:
           - !Ref PublicSubnet1
