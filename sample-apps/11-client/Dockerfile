@@ -11,7 +11,7 @@ RUN npm install --loglevel "silent"
 RUN npm run build
 
 # Build step #2: build the API with the client as static files
-FROM python:3.11-slim
+FROM public.ecr.aws/docker/library/python:3.11-slim
 WORKDIR /app
 COPY --from=build-step /app/build ./build
 
