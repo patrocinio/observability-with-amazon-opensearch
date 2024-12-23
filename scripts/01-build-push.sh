@@ -21,27 +21,61 @@ sed -i -e "s/__REPLACE_WITH_OtelLogs_ENDPOINT__/${OSIS_LOGS_URL}/g" sample-apps/
 sed -i -e "s/__REPLACE_WITH_OtelMetrics_ENDPOINT__/${OSIS_METRICS_URL}/g" sample-apps/02-otel-collector/kubernetes/01-configmap.yaml
 sed -i -e "s/__AWS_REGION__/${AWS_REGION}/g" sample-apps/02-otel-collector/kubernetes/01-configmap.yaml
 
-push_images_ecr() {
+push_images_s3() {
     echo "Building ${2} ..."
     service_folder=$1
     repo_name=$2
     cd sample-apps/$service_folder/
     echo $PWD # Check Directory
-    docker build -t $repo_name .
-    docker tag $repo_name:latest ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/$repo_name:latest
-    docker push ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/$repo_name:latest
+    zip -rq $repo_name.zip *
+    aws s3 cp $repo_name.zip s3://codebuild-assets-$AWS_REGION-$ACCOUNT_ID/
+    rm $repo_name.zip
     sed -i -e "s/__ACCOUNT_ID__/${ACCOUNT_ID}/g" kubernetes/01-deployment.yaml
     sed -i -e "s/__AWS_REGION__/${AWS_REGION}/g" kubernetes/01-deployment.yaml
     rm -rf kubernetes/01-deployment.yaml-e
+    sleep 10
+    build=$(aws codebuild start-build --project-name $repo_name)
     cd ../..
 }
 
-push_images_ecr '04-analytics-service' 'analytics-service'
-push_images_ecr '05-databaseService' 'database-service'
-push_images_ecr '06-orderService' 'order-service'
-push_images_ecr '07-inventoryService' 'inventory-service'
-push_images_ecr '08-paymentService' 'payment-service'
-push_images_ecr '09-recommendationService' 'recommendation-service'
-push_images_ecr '10-authenticationService' 'authentication-service'
-push_images_ecr '11-client' 'client-service'
+check_build_status() {
+    # Get all project names
+    projects=$(aws codebuild list-projects --output text --query 'projects[*]')
+    myArray=()
+    for project in $projects; do
+        myArray+=($project)
+    done
+    # Loop through each project
+    status="NA"
+    while [ ${#myArray[@]} -gt 0 ]; 
+    do
+        message="Building: "
+        newProjects=()
+        for project in ${myArray[@]}; do
+            # Get the most recent builds for this project
+            builds=$(aws codebuild list-builds-for-project --project-name "$project" --output text --query 'ids[*]')
+            
+            # Get detailed build information
+            status=$(aws codebuild batch-get-builds --ids $builds --query 'builds[*].[buildStatus]' --output text)
+            if [[ "$status" != SUCCEEDED* ]] then
+                message+="$project "
+                newProjects+=("$project") 
+            fi  
+        done
+        myArray=("${newProjects[@]}")
+        echo -ne "\n$message"
+        sleep 10
+    done
+    echo "Build complete"
+}
 
+push_images_s3 '04-analytics-service' 'analytics-service'
+push_images_s3 '05-databaseService' 'database-service'
+push_images_s3 '06-orderService' 'order-service'
+push_images_s3 '07-inventoryService' 'inventory-service'
+push_images_s3 '08-paymentService' 'payment-service'
+push_images_s3 '09-recommendationService' 'recommendation-service'
+push_images_s3 '10-authenticationService' 'authentication-service'
+push_images_s3 '11-client' 'client-service'
+
+check_build_status
